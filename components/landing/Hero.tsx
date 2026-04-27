@@ -1,7 +1,7 @@
 "use client";
 import { motion } from "framer-motion";
-import Link from "next/link";
 import { useRef, useEffect, useState } from "react";
+import HeroCTA from "@/components/landing/HeroCTA";
 
 // ── Seamless crossfade video loop ─────────────────────────────────────────────
 // Two video elements swap opacity as one nears its end, hiding the cut entirely.
@@ -260,24 +260,7 @@ export default function Hero() {
                 zIndex: -1,
               }}
             />
-            <Link
-              href="/dashboard"
-              style={{
-                background: "linear-gradient(135deg, #7c6fff 0%, #6366f1 60%, #4f46e5 100%)",
-                color: "white",
-                fontWeight: 700,
-                padding: "15px 38px",
-                borderRadius: "14px",
-                textDecoration: "none",
-                fontSize: "15px",
-                display: "inline-block",
-                position: "relative",
-                boxShadow: "0 0 24px rgba(124,111,255,0.4), inset 0 1px 0 rgba(255,255,255,0.2)",
-                letterSpacing: "0.01em",
-              }}
-            >
-              Start Studying Smarter
-            </Link>
+            <HeroCTA />
           </motion.div>
 
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>

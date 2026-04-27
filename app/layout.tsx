@@ -1,8 +1,10 @@
+// app/layout.tsx
 import type { Metadata } from "next";
 import { Sora, DM_Sans } from "next/font/google";
 import "./globals.css";
 import TransitionLayout from "@/components/TransitionLayout";
 import GlobalBackground from "@/components/GlobalBackground";
+import AuthProvider from "@/components/auth/SessionProvider";
 
 const sora = Sora({
   subsets: ["latin"],
@@ -36,12 +38,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           fontFamily: "var(--font-dm-sans), 'DM Sans', -apple-system, sans-serif",
         }}
       >
-        <GlobalBackground />
-        <div style={{ position: "relative", zIndex: 1 }}>
-          <TransitionLayout>
-            {children}
-          </TransitionLayout>
-        </div>
+        <AuthProvider>
+          <GlobalBackground />
+          <div style={{ position: "relative", zIndex: 1 }}>
+            <TransitionLayout>{children}</TransitionLayout>
+          </div>
+        </AuthProvider>
       </body>
     </html>
   );

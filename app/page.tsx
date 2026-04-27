@@ -1,3 +1,4 @@
+// app/page.tsx
 import Hero from "@/components/landing/Hero";
 import HeroTransition from "@/components/HeroTransition";
 import NeuralBackground from "@/components/NeuralBackground";
@@ -5,10 +6,12 @@ import PainSection from "@/components/landing/PainSection";
 import ProblemSection from "@/components/landing/ProblemSection";
 import FeaturesSection from "@/components/landing/FeaturesSection";
 import AISection from "@/components/landing/AISection";
+import TopNav from "@/components/landing/TopNav";
 
 export default function LandingPage() {
   return (
     <>
+      <TopNav />
       <Hero />
       <HeroTransition />
 
