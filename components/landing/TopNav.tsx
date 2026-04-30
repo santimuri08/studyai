@@ -2,12 +2,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import { motion } from "framer-motion";
 
 export default function TopNav() {
   const { data: session, status } = useSession();
   const isAuthed = status === "authenticated";
+  const pathname = usePathname();
+  const onInfo   = pathname?.startsWith("/info");
 
   return (
     <motion.nav
@@ -49,9 +52,17 @@ export default function TopNav() {
 
       {/* Right side */}
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        {/* Info link (always visible) */}
+        <Link
+          href="/info"
+          style={onInfo ? navLinkActiveStyle : navLinkStyle}
+        >
+          Info
+        </Link>
+
         {isAuthed ? (
           <>
-            <span style={{ fontSize: 13, color: "rgba(229,231,235,0.7)", marginRight: 4 }}>
+            <span style={{ fontSize: 13, color: "rgba(229,231,235,0.7)", marginRight: 4, marginLeft: 6 }}>
               {session?.user?.name ?? session?.user?.email}
             </span>
             <Link
@@ -81,6 +92,26 @@ export default function TopNav() {
     </motion.nav>
   );
 }
+
+const navLinkStyle: React.CSSProperties = {
+  fontSize:       13,
+  fontWeight:     500,
+  color:          "rgba(229,231,235,0.75)",
+  textDecoration: "none",
+  padding:        "8px 12px",
+  borderRadius:   10,
+  fontFamily:     "var(--font-sora, 'Sora'), sans-serif",
+  transition:     "color 0.2s ease, background 0.2s ease",
+};
+
+const navLinkActiveStyle: React.CSSProperties = {
+  ...navLinkStyle,
+  color:      "#c4b5fd",
+  background: "rgba(124,111,255,0.10)",
+  border:     "1px solid rgba(124,111,255,0.22)",
+  fontWeight: 600,
+  padding:    "7px 12px",
+};
 
 const navButtonGhostStyle: React.CSSProperties = {
   fontSize:      13,

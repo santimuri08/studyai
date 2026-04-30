@@ -1,89 +1,20 @@
+// components/landing/Hero.tsx
+//
+// Chat-first homepage hero. No video background — uses an animated mesh
+// gradient. The title/subtitle slide up & fade out the moment the visitor
+// sends their first message, letting the chat take over the viewport.
+//
+// Since the homepage is now JUST this hero (all marketing content moved
+// to /info), the "scroll" cue at the bottom is replaced with a small
+// "See how it works →" link to /info.
+
 "use client";
-import { motion } from "framer-motion";
-import { useRef, useEffect, useState } from "react";
-import HeroCTA from "@/components/landing/HeroCTA";
 
-// ── Seamless crossfade video loop ─────────────────────────────────────────────
-// Two video elements swap opacity as one nears its end, hiding the cut entirely.
-function VideoBackground() {
-  const vidA = useRef<HTMLVideoElement>(null);
-  const vidB = useRef<HTMLVideoElement>(null);
-  const [active, setActive] = useState<"a" | "b">("a");
+import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
+import Link from "next/link";
+import GuestChat from "@/components/landing/GuestChat";
 
-  useEffect(() => {
-    const a = vidA.current;
-    const b = vidB.current;
-    if (!a || !b) return;
-
-    // Slow it down so 6s feels longer and motion is more ambient
-    a.playbackRate = 0.6;
-    b.playbackRate = 0.6;
-
-    // Duration of crossfade in seconds
-    const FADE_BEFORE = 1.2;
-
-    let rafId: number;
-
-    function tick() {
-      const current = active === "a" ? a : b;
-      if (current && current.duration && !current.paused) {
-        const remaining = current.duration - current.currentTime;
-        if (remaining <= FADE_BEFORE) {
-          // Start the other video slightly before this one ends
-          const next = current === a ? b : a;
-          if (next && next.paused) {
-            next.currentTime = 0;
-            next.play().catch(() => {});
-            setActive(prev => (prev === "a" ? "b" : "a"));
-          }
-        }
-      }
-      rafId = requestAnimationFrame(tick);
-    }
-
-    a.play().catch(() => {});
-    rafId = requestAnimationFrame(tick);
-
-    return () => cancelAnimationFrame(rafId);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const sharedStyle: React.CSSProperties = {
-    position: "absolute",
-    inset: 0,
-    width: "100%",
-    height: "100%",
-    objectFit: "cover",
-    transition: "opacity 1.2s ease",
-  };
-
-  return (
-    <>
-      <video
-        ref={vidA}
-        muted
-        playsInline
-        preload="auto"
-        style={{ ...sharedStyle, zIndex: 0, opacity: active === "a" ? 1 : 0 }}
-      >
-        <source src="/background_video.mp4" type="video/mp4" />
-        <source src="/background_video.webm" type="video/webm" />
-      </video>
-      <video
-        ref={vidB}
-        muted
-        playsInline
-        preload="auto"
-        style={{ ...sharedStyle, zIndex: 0, opacity: active === "b" ? 1 : 0 }}
-      >
-        <source src="/background_video.mp4" type="video/mp4" />
-        <source src="/background_video.webm" type="video/webm" />
-      </video>
-    </>
-  );
-}
-
-// ── Word-by-word headline ─────────────────────────────────────────────────────
 const line1 = ["Understand.", "Plan."];
 const line2 = ["Study", "Smarter."];
 
@@ -100,234 +31,266 @@ const wordVariants = {
 };
 
 export default function Hero() {
+  const [chatActive, setChatActive] = useState(false);
+
   return (
     <section style={{
-      minHeight: "100vh",
-      display: "flex",
+      minHeight:  "100vh",
+      display:    "flex",
       alignItems: "center",
       justifyContent: "center",
-      padding: "0 1rem",
-      position: "relative",
-      overflow: "hidden",
+      padding:    "96px 16px 56px",
+      position:   "relative",
+      overflow:   "hidden",
     }}>
 
-      <VideoBackground />
+      <MeshGradient />
 
-      {/* Dark overlay */}
-      <div style={{
-        position: "absolute", inset: 0, zIndex: 1,
-        background: "linear-gradient(to bottom, rgba(6,6,16,0.55) 0%, rgba(6,6,16,0.4) 60%, rgba(6,6,16,0.78) 100%)",
-      }} />
-
-      {/* Vignette edges */}
+      {/* Soft top-to-bottom dim */}
       <div style={{
         position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
-        background: "radial-gradient(ellipse at 50% 50%, transparent 42%, rgba(0,0,8,0.68) 100%)",
+        background:
+          "linear-gradient(to bottom, rgba(6,6,16,0.55) 0%, rgba(6,6,16,0.35) 45%, rgba(6,6,16,0.85) 100%)",
       }} />
 
-      {/* ── Center content ── */}
+      {/* Edge vignette */}
       <div style={{
-        position: "relative",
-        textAlign: "center",
-        maxWidth: "820px",
-        zIndex: 10,
-        padding: "0 16px",
+        position: "absolute", inset: 0, zIndex: 1, pointerEvents: "none",
+        background:
+          "radial-gradient(ellipse at 50% 50%, transparent 40%, rgba(0,0,8,0.7) 100%)",
+      }} />
+
+      {/* Center column */}
+      <div style={{
+        position:   "relative",
+        zIndex:     10,
+        width:      "100%",
+        maxWidth:   chatActive ? 820 : 880,
+        textAlign:  "center",
+        display:    "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap:        chatActive ? 0 : 28,
+        transition: "max-width 0.5s ease",
       }}>
 
-        {/* Badge */}
-        <motion.div
-          initial={{ opacity: 0, y: 16, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          transition={{ duration: 0.55, ease: [0.25, 0.1, 0.25, 1] }}
-          style={{
-            display: "inline-flex",
-            alignItems: "center",
-            gap: "8px",
-            background: "rgba(124,111,255,0.12)",
-            border: "1px solid rgba(124,111,255,0.3)",
-            borderRadius: "9999px",
-            padding: "7px 18px",
-            fontSize: "13px",
-            color: "#a78bfa",
-            marginBottom: "36px",
-            backdropFilter: "blur(12px)",
-            WebkitBackdropFilter: "blur(12px)",
-          }}
-        >
-          <motion.span
-            animate={{ rotate: [0, 20, -20, 0] }}
-            transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
-            style={{ fontSize: "15px" }}
-          >
-            ✦
-          </motion.span>
-          AI-powered academic productivity
-        </motion.div>
+        {/* Title block — fades out when chat activates */}
+        <AnimatePresence mode="wait">
+          {!chatActive && (
+            <motion.div
+              key="title-block"
+              initial={{ opacity: 1 }}
+              exit={{ opacity: 0, y: -36, filter: "blur(8px)" }}
+              transition={{ duration: 0.5, ease: [0.4, 0, 0.2, 1] }}
+              style={{ width: "100%" }}
+            >
+              {/* Pill */}
+              <motion.div
+                initial={{ opacity: 0, y: 16, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                transition={{ duration: 0.55 }}
+                style={{
+                  display: "inline-flex", alignItems: "center", gap: 8,
+                  background: "rgba(124,111,255,0.12)",
+                  border: "1px solid rgba(124,111,255,0.3)",
+                  borderRadius: 9999,
+                  padding: "7px 18px",
+                  fontSize: 13, color: "#a78bfa",
+                  marginBottom: 28,
+                  backdropFilter: "blur(12px)",
+                }}
+              >
+                <motion.span
+                  animate={{ rotate: [0, 20, -20, 0] }}
+                  transition={{ repeat: Infinity, duration: 3, ease: "easeInOut" }}
+                  style={{ fontSize: 15 }}
+                >
+                  ✦
+                </motion.span>
+                AI-powered academic productivity
+              </motion.div>
 
-        {/* Headline */}
-        <div style={{ position: "relative", marginBottom: "28px" }}>
-          <motion.div
-            initial={{ opacity: 0, scale: 0.7 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 1.4, delay: 0.2 }}
-            style={{
-              position: "absolute", inset: "-30px",
-              background: "radial-gradient(ellipse at 50% 60%, rgba(124,111,255,0.2) 0%, transparent 65%)",
-              filter: "blur(28px)",
-              pointerEvents: "none", zIndex: 0,
-            }}
+              {/* Headline */}
+              <h1 style={{
+                fontSize:   "clamp(2.6rem, 6.5vw, 5.2rem)",
+                fontWeight: 800,
+                lineHeight: 1.08,
+                margin:     0,
+                marginBottom: 22,
+                position:   "relative",
+              }}>
+                <div style={{ display: "flex", justifyContent: "center", gap: "0.3em", flexWrap: "wrap", marginBottom: "0.06em" }}>
+                  {line1.map((word, i) => (
+                    <motion.span
+                      key={word}
+                      custom={i}
+                      variants={wordVariants}
+                      initial="hidden"
+                      animate="visible"
+                      style={{
+                        background: "linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #7c6fff 100%)",
+                        WebkitBackgroundClip: "text",
+                        WebkitTextFillColor:  "transparent",
+                        backgroundClip:       "text",
+                        display: "inline-block",
+                      }}
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </div>
+                <div style={{ display: "flex", justifyContent: "center", gap: "0.3em", flexWrap: "wrap" }}>
+                  {line2.map((word, i) => (
+                    <motion.span
+                      key={word}
+                      custom={i + line1.length}
+                      variants={wordVariants}
+                      initial="hidden"
+                      animate="visible"
+                      style={{ color: "white", display: "inline-block" }}
+                    >
+                      {word}
+                    </motion.span>
+                  ))}
+                </div>
+              </h1>
+
+              {/* Subtitle */}
+              <motion.p
+                initial={{ opacity: 0, y: 14 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.55, delay: 0.7 }}
+                style={{
+                  fontSize:   "1.1rem",
+                  color:      "rgba(209,213,219,0.92)",
+                  maxWidth:   620,
+                  margin:     "0 auto 6px",
+                  lineHeight: 1.6,
+                }}
+              >
+                An AI platform that reads your assignments, breaks them into tasks,
+                and builds your perfect study schedule — automatically.
+              </motion.p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Guest chat */}
+        <div style={{
+          width: "100%",
+          marginTop: chatActive ? 0 : 36,
+          transition: "margin 0.4s ease",
+        }}>
+          <GuestChat
+            active={chatActive}
+            onActivate={() => setChatActive(true)}
           />
-
-          <h1 style={{
-            position: "relative", zIndex: 1,
-            fontSize: "clamp(2.8rem, 7vw, 5.5rem)",
-            fontWeight: 800, lineHeight: 1.08, margin: 0,
-          }}>
-            <div style={{ display: "flex", justifyContent: "center", gap: "0.3em", flexWrap: "wrap", marginBottom: "0.08em" }}>
-              {line1.map((word, i) => (
-                <motion.span
-                  key={word}
-                  custom={i}
-                  variants={wordVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{
-                    background: "linear-gradient(135deg, #ffffff 0%, #c4b5fd 40%, #7c6fff 100%)",
-                    WebkitBackgroundClip: "text",
-                    WebkitTextFillColor: "transparent",
-                    backgroundClip: "text",
-                    display: "inline-block",
-                  }}
-                >
-                  {word}
-                </motion.span>
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "center", gap: "0.3em", flexWrap: "wrap" }}>
-              {line2.map((word, i) => (
-                <motion.span
-                  key={word}
-                  custom={i + line1.length}
-                  variants={wordVariants}
-                  initial="hidden"
-                  animate="visible"
-                  style={{ color: "white", display: "inline-block" }}
-                >
-                  {word}
-                </motion.span>
-              ))}
-            </div>
-          </h1>
         </div>
 
-        {/* Subtext */}
-        <motion.p
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.65, ease: [0.25, 0.1, 0.25, 1] }}
-          style={{
-            fontSize: "1.15rem",
-            color: "rgba(209,213,219,0.9)",
-            maxWidth: "560px",
-            margin: "0 auto 48px",
-            lineHeight: 1.7,
-          }}
-        >
-          An AI platform that reads your assignments, breaks them into tasks,
-          and builds your perfect study schedule automatically.
-        </motion.p>
-
-        {/* Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.55, delay: 0.82, ease: [0.25, 0.1, 0.25, 1] }}
-          style={{ display: "flex", gap: "14px", justifyContent: "center", flexWrap: "wrap" }}
-        >
-          <motion.div
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            style={{ position: "relative" }}
-          >
+        {/* "See how it works" link — only when title is showing */}
+        <AnimatePresence>
+          {!chatActive && (
             <motion.div
-              animate={{ opacity: [0.4, 0.8, 0.4], scale: [1, 1.08, 1] }}
-              transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
-              style={{
-                position: "absolute", inset: "-3px",
-                borderRadius: "17px",
-                background: "linear-gradient(135deg, #7c6fff, #6366f1, #a78bfa)",
-                filter: "blur(8px)",
-                zIndex: -1,
-              }}
-            />
-            <HeroCTA />
-          </motion.div>
-
-          <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
-            <a
-              href="#features"
-              style={{
-                background: "rgba(255,255,255,0.08)",
-                border: "1px solid rgba(255,255,255,0.2)",
-                color: "white",
-                fontWeight: 600,
-                padding: "15px 38px",
-                borderRadius: "14px",
-                textDecoration: "none",
-                fontSize: "15px",
-                display: "inline-block",
-                backdropFilter: "blur(12px)",
-                WebkitBackdropFilter: "blur(12px)",
-              }}
+              key="info-link"
+              initial={{ opacity: 0, y: 6 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0 }}
+              transition={{ delay: 1.3, duration: 0.5 }}
+              style={{ marginTop: 32 }}
             >
-              See Features
-            </a>
-          </motion.div>
-        </motion.div>
-
-        {/* Scroll indicator */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 1.5, duration: 0.7 }}
-          style={{ marginTop: "64px", display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}
-        >
-          <div style={{
-            width: "24px", height: "38px", borderRadius: "12px",
-            border: "1.5px solid rgba(255,255,255,0.22)",
-            display: "flex", alignItems: "flex-start", justifyContent: "center",
-            padding: "5px", overflow: "hidden",
-          }}>
-            <motion.div
-              animate={{ y: [0, 16, 0], opacity: [1, 0.2, 1] }}
-              transition={{ repeat: Infinity, duration: 1.8, ease: "easeInOut" }}
-              style={{
-                width: "4px", height: "8px", borderRadius: "2px",
-                background: "linear-gradient(180deg, #a78bfa, rgba(124,111,255,0.2))",
-              }}
-            />
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
-            {[0, 1].map((i) => (
-              <motion.div
-                key={i}
-                animate={{ y: [0, 4, 0], opacity: [0.3, 0.7, 0.3] }}
-                transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut", delay: i * 0.2 }}
+              <Link
+                href="/info"
+                data-hover
                 style={{
-                  width: "10px", height: "6px",
-                  borderLeft: "1.5px solid rgba(255,255,255,0.3)",
-                  borderBottom: "1.5px solid rgba(255,255,255,0.3)",
-                  transform: "rotate(-45deg)",
+                  fontSize:       13,
+                  fontWeight:     500,
+                  color:          "rgba(167,139,250,0.85)",
+                  textDecoration: "none",
+                  padding:        "8px 16px",
+                  borderRadius:   9999,
+                  border:         "1px solid rgba(124,111,255,0.20)",
+                  background:     "rgba(124,111,255,0.06)",
+                  backdropFilter: "blur(8px)",
+                  fontFamily:     "var(--font-sora, 'Sora'), sans-serif",
+                  letterSpacing:  "0.02em",
+                  cursor:         "none",
+                  display:        "inline-flex",
+                  alignItems:     "center",
+                  gap:            6,
+                  transition:     "color 0.2s ease, background 0.2s ease, border-color 0.2s ease",
                 }}
-              />
-            ))}
-          </div>
-          <span style={{ fontSize: "10px", color: "rgba(107,114,128,0.8)", letterSpacing: "0.12em", marginTop: "2px" }}>
-            SCROLL
-          </span>
-        </motion.div>
-
+              >
+                See how it works
+                <motion.span
+                  animate={{ x: [0, 3, 0] }}
+                  transition={{ repeat: Infinity, duration: 1.6, ease: "easeInOut" }}
+                  style={{ display: "inline-block" }}
+                >
+                  →
+                </motion.span>
+              </Link>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </section>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────
+// Animated mesh gradient — replaces the video background
+// ─────────────────────────────────────────────────────────────────
+
+function MeshGradient() {
+  const blobs = [
+    { color: "rgba(124,111,255,0.30)", initial: { x: "10%",  y: "20%" }, animate: { x: ["10%","60%","10%"], y: ["20%","50%","20%"] }, dur: 18 },
+    { color: "rgba(91,69,224,0.28)",   initial: { x: "70%",  y: "30%" }, animate: { x: ["70%","20%","70%"], y: ["30%","70%","30%"] }, dur: 22 },
+    { color: "rgba(167,139,250,0.22)", initial: { x: "40%",  y: "75%" }, animate: { x: ["40%","80%","40%"], y: ["75%","30%","75%"] }, dur: 26 },
+  ];
+
+  return (
+    <div
+      aria-hidden
+      style={{
+        position: "absolute", inset: 0, zIndex: 0,
+        overflow: "hidden",
+        background:
+          "radial-gradient(ellipse at 50% 0%, rgba(20,14,52,0.85) 0%, #06060f 70%)",
+      }}
+    >
+      {blobs.map((b, i) => (
+        <motion.div
+          key={i}
+          initial={b.initial}
+          animate={b.animate}
+          transition={{
+            duration: b.dur,
+            repeat:   Infinity,
+            ease:     "easeInOut",
+          }}
+          style={{
+            position: "absolute",
+            width:    "55vmax",
+            height:   "55vmax",
+            borderRadius: "50%",
+            background: `radial-gradient(circle at 50% 50%, ${b.color} 0%, transparent 65%)`,
+            filter:   "blur(60px)",
+            transform: "translate(-50%, -50%)",
+            mixBlendMode: "screen",
+          }}
+        />
+      ))}
+
+      <div style={{
+        position: "absolute", inset: 0,
+        backgroundImage:
+          "radial-gradient(rgba(255,255,255,0.06) 1px, transparent 1px)",
+        backgroundSize: "3px 3px",
+        opacity: 0.35,
+        mixBlendMode: "screen",
+        maskImage: "radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)",
+        WebkitMaskImage: "radial-gradient(ellipse at 50% 50%, black 30%, transparent 80%)",
+      }} />
+    </div>
   );
 }
